@@ -25,6 +25,7 @@ import (
 	intctrlutil "github.com/OT-CONTAINER-KIT/redis-operator/internal/controllerutil"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/envs"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/k8sutils"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,6 +39,7 @@ const (
 // Reconciler reconciles a Redis object
 type Reconciler struct {
 	client.Client
+	k8sutils.StatefulSet
 	K8sClient kubernetes.Interface
 }
 
@@ -82,9 +84,8 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, instance *rvb2.Redis) 
 	connectionInfo := k8sutils.GetRedisConnectionInfo(ctx, r.K8sClient, instance, envs.GetServiceDNSDomain())
 
 	// Check StatefulSet health
-	stsService := k8sutils.NewStatefulSetService(r.K8sClient)
-	isReady := stsService.IsStatefulSetReady(ctx, instance.Namespace, instance.Name)
-	readyReplicas := stsService.GetStatefulSetReplicas(ctx, instance.Namespace, instance.Name)
+	isReady := r.IsStatefulSetReady(ctx, instance.Namespace, instance.Name)
+	readyReplicas := r.GetStatefulSetReplicas(ctx, instance.Namespace, instance.Name)
 
 	var state rvb2.RedisState
 	if isReady && readyReplicas > 0 {
@@ -123,6 +124,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, redis *rvb2.Redis, status
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rvb2.Redis{}).
+		Owns(&appsv1.StatefulSet{}).
 		WithOptions(opts).
 		Complete(r)
 }

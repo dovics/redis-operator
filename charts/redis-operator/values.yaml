@@ -53,6 +53,17 @@ redisOperator:
     # The address the metrics endpoint binds to
     bindAddress: ":8080"
 
+  # logging configuration
+  logging:
+    # Log level (debug, info, warn, error)
+    level: info
+    # Development mode enables stack traces and more verbose logging
+    development: false
+    # Log encoding format (json, console)
+    encoder: json
+    # Log time encoding (epoch, millis, nanos, iso8601)
+    timeEncoding: iso8601
+
 resources:
   limits:
     cpu: 500m

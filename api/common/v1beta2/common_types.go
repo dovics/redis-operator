@@ -423,8 +423,6 @@ type ConnectionInfo struct {
 	ClusterIP string `json:"clusterIP,omitempty"`
 	// ExternalIPs are the service external IPs
 	ExternalIPs []string `json:"externalIPs,omitempty"`
-	// Ports are the service ports
-	Ports []ServicePort `json:"ports,omitempty"`
 	// Domain is the service domain
 	Domain string `json:"domain,omitempty"`
 	// MasterName is the Sentinel master group name, only set when Sentinel mode is enabled

@@ -17,6 +17,7 @@ import (
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/k8sutils"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/monitoring"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/service/redis"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -447,15 +448,14 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, instance *rrvb2.RedisR
 	}
 
 	// Check StatefulSet health and calculate state
-	stsService := k8sutils.NewStatefulSetService(r.K8sClient)
-	isReady := stsService.IsStatefulSetReady(ctx, instance.Namespace, instance.RedisStatefulSet())
-	readyReplicas := stsService.GetStatefulSetReplicas(ctx, instance.Namespace, instance.RedisStatefulSet())
+	isReady := r.IsStatefulSetReady(ctx, instance.Namespace, instance.RedisStatefulSet())
+	readyReplicas := r.GetStatefulSetReplicas(ctx, instance.Namespace, instance.RedisStatefulSet())
 
 	var state rrvb2.RedisReplicationState
 	desiredReplicas := *instance.Spec.Size
 
 	if instance.EnableSentinel() {
-		sentinelReady := stsService.IsStatefulSetReady(ctx, instance.Namespace, instance.SentinelStatefulSet())
+		sentinelReady := r.IsStatefulSetReady(ctx, instance.Namespace, instance.SentinelStatefulSet())
 		if !sentinelReady || !isReady {
 			state = rrvb2.RedisReplicationStateCreating
 		} else if readyReplicas != desiredReplicas {
@@ -503,6 +503,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, rr *rrvb2.RedisReplicatio
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, opts controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rrvb2.RedisReplication{}).
+		Owns(&appsv1.StatefulSet{}).
 		WithOptions(opts).
 		Complete(r)
 }

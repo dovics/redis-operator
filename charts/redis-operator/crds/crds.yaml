@@ -6187,27 +6187,6 @@ spec:
                   port:
                     description: Port is the service port
                     type: integer
-                  ports:
-                    description: Ports are the service ports
-                    items:
-                      description: ServicePort represents a network port exposed by
-                        a service
-                      properties:
-                        name:
-                          description: Name of the port
-                          type: string
-                        port:
-                          description: Port number
-                          format: int32
-                          type: integer
-                        protocol:
-                          description: Protocol (TCP/UDP)
-                          enum:
-                          - TCP
-                          - UDP
-                          type: string
-                      type: object
-                    type: array
                   type:
                     description: Type is the service type (ClusterIP, LoadBalancer,
                       NodePort, etc.)
@@ -14933,27 +14912,6 @@ spec:
                   port:
                     description: Port is the service port
                     type: integer
-                  ports:
-                    description: Ports are the service ports
-                    items:
-                      description: ServicePort represents a network port exposed by
-                        a service
-                      properties:
-                        name:
-                          description: Name of the port
-                          type: string
-                        port:
-                          description: Port number
-                          format: int32
-                          type: integer
-                        protocol:
-                          description: Protocol (TCP/UDP)
-                          enum:
-                          - TCP
-                          - UDP
-                          type: string
-                      type: object
-                    type: array
                   type:
                     description: Type is the service type (ClusterIP, LoadBalancer,
                       NodePort, etc.)
@@ -15001,6 +14959,10 @@ spec:
       name: State
       priority: 1
       type: string
+    - description: Desired number of replicas
+      jsonPath: .spec.clusterSize
+      name: Desired
+      type: integer
     - description: Number of ready replicas
       jsonPath: .status.readyReplicas
       name: ReadyReplicas
@@ -21671,27 +21633,6 @@ spec:
                   port:
                     description: Port is the service port
                     type: integer
-                  ports:
-                    description: Ports are the service ports
-                    items:
-                      description: ServicePort represents a network port exposed by
-                        a service
-                      properties:
-                        name:
-                          description: Name of the port
-                          type: string
-                        port:
-                          description: Port number
-                          format: int32
-                          type: integer
-                        protocol:
-                          description: Protocol (TCP/UDP)
-                          enum:
-                          - TCP
-                          - UDP
-                          type: string
-                      type: object
-                    type: array
                   type:
                     description: Type is the service type (ClusterIP, LoadBalancer,
                       NodePort, etc.)
@@ -21731,7 +21672,17 @@ spec:
     singular: redissentinel
   scope: Namespaced
   versions:
-  - name: v1beta2
+  - additionalPrinterColumns:
+    - description: Desired number of sentinel replicas
+      jsonPath: .spec.clusterSize
+      name: Desired
+      type: integer
+    - description: Age of the Redis sentinel
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      priority: 1
+      type: date
+    name: v1beta2
     schema:
       openAPIV3Schema:
         description: Redis is the Schema for the redis API

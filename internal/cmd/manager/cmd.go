@@ -229,12 +229,13 @@ func createK8sClient(qps float32) (kubernetes.Interface, error) {
 func setupControllers(mgr ctrl.Manager, k8sClient kubernetes.Interface, maxConcurrentReconciles int) error {
 	// Get max concurrent reconciles from environment
 	maxConcurrentReconciles = envs.GetMaxConcurrentReconciles(maxConcurrentReconciles)
-
+	statefulSetService := k8sutils.NewStatefulSetService(k8sClient)
 	healer := redis.NewHealer(k8sClient)
 
 	if err := (&rediscontroller.Reconciler{
-		Client:    mgr.GetClient(),
-		K8sClient: k8sClient,
+		Client:      mgr.GetClient(),
+		K8sClient:   k8sClient,
+		StatefulSet: statefulSetService,
 	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Redis")
 		return err
@@ -245,7 +246,7 @@ func setupControllers(mgr ctrl.Manager, k8sClient kubernetes.Interface, maxConcu
 		Healer:      healer,
 		Checker:     redis.NewChecker(k8sClient),
 		Recorder:    mgr.GetEventRecorderFor("rediscluster-controller"),
-		StatefulSet: k8sutils.NewStatefulSetService(k8sClient),
+		StatefulSet: statefulSetService,
 	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "RedisCluster")
 		return err
@@ -254,7 +255,7 @@ func setupControllers(mgr ctrl.Manager, k8sClient kubernetes.Interface, maxConcu
 		Client:      mgr.GetClient(),
 		K8sClient:   k8sClient,
 		Healer:      healer,
-		StatefulSet: k8sutils.NewStatefulSetService(k8sClient),
+		StatefulSet: statefulSetService,
 	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "RedisReplication")
 		return err

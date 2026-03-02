@@ -47,6 +47,8 @@ type RedisSentinelStatus struct{}
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 //+kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Desired",type=integer,JSONPath=".spec.clusterSize",description="Desired number of sentinel replicas"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=".metadata.creationTimestamp",description="Age of the Redis sentinel",priority=1
 
 // Redis is the Schema for the redis API
 type RedisSentinel struct {

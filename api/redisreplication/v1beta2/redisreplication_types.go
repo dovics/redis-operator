@@ -78,6 +78,7 @@ type RedisReplicationStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.state",description="The current state of the Redis replication",priority=1
+// +kubebuilder:printcolumn:name="Desired",type=integer,JSONPath=".spec.clusterSize",description="Desired number of replicas"
 // +kubebuilder:printcolumn:name="ReadyReplicas",type=integer,JSONPath=".status.readyReplicas",description="Number of ready replicas"
 // +kubebuilder:printcolumn:name="Master",type="string",JSONPath=".status.masterNode",description="Current master node"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age of the Redis replication",priority=1

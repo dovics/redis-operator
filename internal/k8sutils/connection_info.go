@@ -55,24 +55,11 @@ func GetRedisConnectionInfo(ctx context.Context, client kubernetes.Interface, re
 		Port:      getServicePort(service, redis.Namespace),
 		Type:      string(service.Spec.Type),
 		ClusterIP: service.Spec.ClusterIP,
-		Domain:    dnsDomain,
 	}
 
 	// Add external IPs if present
 	if len(service.Spec.ExternalIPs) > 0 {
 		connInfo.ExternalIPs = service.Spec.ExternalIPs
-	}
-
-	// Add ports from the service
-	if len(service.Spec.Ports) > 0 {
-		connInfo.Ports = make([]commonapi.ServicePort, 0, len(service.Spec.Ports))
-		for _, port := range service.Spec.Ports {
-			connInfo.Ports = append(connInfo.Ports, commonapi.ServicePort{
-				Name:     port.Name,
-				Port:     port.Port,
-				Protocol: string(port.Protocol),
-			})
-		}
 	}
 
 	// Add LoadBalancer ingress IPs if present
@@ -114,7 +101,6 @@ func GetRedisReplicationConnectionInfo(ctx context.Context, client kubernetes.In
 		Port:      getServicePort(service, rr.Namespace),
 		Type:      string(service.Spec.Type),
 		ClusterIP: service.Spec.ClusterIP,
-		Domain:    dnsDomain,
 	}
 
 	// Add MasterName for Sentinel mode
@@ -125,18 +111,6 @@ func GetRedisReplicationConnectionInfo(ctx context.Context, client kubernetes.In
 	// Add external IPs if present
 	if len(service.Spec.ExternalIPs) > 0 {
 		connInfo.ExternalIPs = service.Spec.ExternalIPs
-	}
-
-	// Add ports from the service
-	if len(service.Spec.Ports) > 0 {
-		connInfo.Ports = make([]commonapi.ServicePort, 0, len(service.Spec.Ports))
-		for _, port := range service.Spec.Ports {
-			connInfo.Ports = append(connInfo.Ports, commonapi.ServicePort{
-				Name:     port.Name,
-				Port:     port.Port,
-				Protocol: string(port.Protocol),
-			})
-		}
 	}
 
 	// Add LoadBalancer ingress IPs if present
@@ -218,24 +192,11 @@ func GetRedisClusterConnectionInfo(ctx context.Context, client kubernetes.Interf
 		Port:      getServicePort(service, rc.Namespace),
 		Type:      string(service.Spec.Type),
 		ClusterIP: service.Spec.ClusterIP,
-		Domain:    dnsDomain,
 	}
 
 	// Add external IPs if present
 	if len(service.Spec.ExternalIPs) > 0 {
 		connInfo.ExternalIPs = service.Spec.ExternalIPs
-	}
-
-	// Add ports from the service
-	if len(service.Spec.Ports) > 0 {
-		connInfo.Ports = make([]commonapi.ServicePort, 0, len(service.Spec.Ports))
-		for _, port := range service.Spec.Ports {
-			connInfo.Ports = append(connInfo.Ports, commonapi.ServicePort{
-				Name:     port.Name,
-				Port:     port.Port,
-				Protocol: string(port.Protocol),
-			})
-		}
 	}
 
 	// Add LoadBalancer ingress IPs if present
