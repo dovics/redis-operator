@@ -122,6 +122,9 @@ type RedisClusterStatus struct {
 	ReadyLeaderReplicas int32 `json:"readyLeaderReplicas,omitempty"`
 	// +kubebuilder:default=0
 	ReadyFollowerReplicas int32 `json:"readyFollowerReplicas,omitempty"`
+	// ConnectionInfo provides connection details for clients to connect to Redis
+	// +optional
+	ConnectionInfo *common.ConnectionInfo `json:"connectionInfo,omitempty"`
 }
 
 type RedisClusterState string

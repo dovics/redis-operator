@@ -99,10 +99,86 @@ func (in *KubernetesConfig) ShouldIncludeBusPortForAdditional() bool {
 	return *in.Service.Additional.IncludeBusPort
 }
 
+// GetAdditionalServiceType returns the service type for the additional service
+func (in *KubernetesConfig) GetAdditionalServiceType() string {
+	if in.Service == nil {
+		return "ClusterIP"
+	}
+	if in.Service.Additional == nil {
+		return "ClusterIP"
+	}
+	if in.Service.Additional.Type == "" {
+		return "ClusterIP"
+	}
+	return in.Service.Additional.Type
+}
+
+// GetHeadlessServiceType returns the service type for the headless service
+func (in *KubernetesConfig) GetHeadlessServiceType() string {
+	if in.Service == nil {
+		return "ClusterIP"
+	}
+	if in.Service.Headless == nil {
+		return "ClusterIP"
+	}
+	if in.Service.Headless.Type == "" {
+		return "ClusterIP"
+	}
+	return in.Service.Headless.Type
+}
+
+// GetAdditionalServiceLoadBalancerClass returns the load balancer class for the additional service
+func (in *KubernetesConfig) GetAdditionalServiceLoadBalancerClass() *string {
+	if in.Service == nil {
+		return nil
+	}
+	if in.Service.Additional == nil {
+		return nil
+	}
+	return in.Service.Additional.LoadBalancerClass
+}
+
+// GetAdditionalServiceExternalTrafficPolicy returns the external traffic policy for the additional service
+func (in *KubernetesConfig) GetAdditionalServiceExternalTrafficPolicy() string {
+	if in.Service == nil {
+		return ""
+	}
+	if in.Service.Additional == nil {
+		return ""
+	}
+	return in.Service.Additional.ExternalTrafficPolicy
+}
+
+// GetAdditionalServiceInternalTrafficPolicy returns the internal traffic policy for the additional service
+func (in *KubernetesConfig) GetAdditionalServiceInternalTrafficPolicy() string {
+	if in.Service == nil {
+		return ""
+	}
+	if in.Service.Additional == nil {
+		return ""
+	}
+	return in.Service.Additional.InternalTrafficPolicy
+}
+
+// GetAdditionalServiceSessionAffinity returns the session affinity for the additional service
+func (in *KubernetesConfig) GetAdditionalServiceSessionAffinity() string {
+	if in.Service == nil {
+		return "None"
+	}
+	if in.Service.Additional == nil {
+		return "None"
+	}
+	if in.Service.Additional.SessionAffinity == "" {
+		return "None"
+	}
+	return in.Service.Additional.SessionAffinity
+}
+
 // ServiceConfig define the type of service to be created and its annotations
 // +k8s:deepcopy-gen=true
 type ServiceConfig struct {
 	// +kubebuilder:validation:Enum=LoadBalancer;NodePort;ClusterIP
+	// +kubebuilder:default:=ClusterIP
 	ServiceType        string            `json:"serviceType,omitempty"`
 	ServiceAnnotations map[string]string `json:"annotations,omitempty"`
 	// IncludeBusPort when set to true, it will add bus port to the service, such as 16379.
@@ -126,6 +202,22 @@ type Service struct {
 	IncludeBusPort *bool `json:"includeBusPort,omitempty"`
 	// +kubebuilder:default:=true
 	Enabled *bool `json:"enabled,omitempty"`
+	// LoadBalancerClass is the class of the load balancer to use
+	// +optional
+	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
+	// ExternalTrafficPolicy defines how traffic from external sources is routed
+	// +kubebuilder:validation:Enum=Local;Cluster
+	// +optional
+	ExternalTrafficPolicy string `json:"externalTrafficPolicy,omitempty"`
+	// InternalTrafficPolicy defines how traffic from internal sources is routed
+	// +kubebuilder:validation:Enum=Local;Cluster
+	// +optional
+	InternalTrafficPolicy string `json:"internalTrafficPolicy,omitempty"`
+	// SessionAffinity defines the session affinity settings
+	// +kubebuilder:validation:Enum=ClientIP;None
+	// +kubebuilder:default:=None
+	// +optional
+	SessionAffinity string `json:"sessionAffinity,omitempty"`
 }
 
 // ExistingPasswordSecret is the struct to access the existing secret
@@ -304,4 +396,38 @@ func (a *ACLConfig) Validate() error {
 	}
 
 	return nil
+}
+
+// ServicePort represents a network port exposed by a service
+// +k8s:deepcopy-gen=true
+type ServicePort struct {
+	// Name of the port
+	Name string `json:"name,omitempty"`
+	// Port number
+	Port int32 `json:"port,omitempty"`
+	// Protocol (TCP/UDP)
+	// +kubebuilder:validation:Enum=TCP;UDP
+	Protocol string `json:"protocol,omitempty"`
+}
+
+// ConnectionInfo provides connection details for clients to connect to Redis
+// +k8s:deepcopy-gen=true
+type ConnectionInfo struct {
+	// Host is the service FQDN
+	Host string `json:"host,omitempty"`
+	// Port is the service port
+	Port int `json:"port,omitempty"`
+	// Type is the service type (ClusterIP, LoadBalancer, NodePort, etc.)
+	Type string `json:"type,omitempty"`
+	// ClusterIP is the service cluster IP
+	ClusterIP string `json:"clusterIP,omitempty"`
+	// ExternalIPs are the service external IPs
+	ExternalIPs []string `json:"externalIPs,omitempty"`
+	// Ports are the service ports
+	Ports []ServicePort `json:"ports,omitempty"`
+	// Domain is the service domain
+	Domain string `json:"domain,omitempty"`
+	// MasterName is the Sentinel master group name, only set when Sentinel mode is enabled
+	// +optional
+	MasterName string `json:"masterName,omitempty"`
 }

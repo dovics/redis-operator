@@ -23,8 +23,21 @@ var disableMetrics exporterPortProvider = func() (int, bool) {
 	return 0, false
 }
 
+// ServiceOptions holds additional service configuration options
+type ServiceOptions struct {
+	LoadBalancerClass     *string
+	ExternalTrafficPolicy string
+	InternalTrafficPolicy string
+	SessionAffinity       string
+}
+
 // generateServiceDef generates service definition for Redis
 func generateServiceDef(serviceMeta metav1.ObjectMeta, epp exporterPortProvider, ownerDef metav1.OwnerReference, headless bool, serviceType string, port int, extra ...corev1.ServicePort) *corev1.Service {
+	return generateServiceDefWithOptions(serviceMeta, epp, ownerDef, headless, serviceType, port, nil, extra...)
+}
+
+// generateServiceDefWithOptions generates service definition for Redis with additional options
+func generateServiceDefWithOptions(serviceMeta metav1.ObjectMeta, epp exporterPortProvider, ownerDef metav1.OwnerReference, headless bool, serviceType string, port int, opts *ServiceOptions, extra ...corev1.ServicePort) *corev1.Service {
 	var PortName string
 	if serviceMeta.Labels["role"] == "sentinel" {
 		PortName = "sentinel-client"
@@ -35,9 +48,10 @@ func generateServiceDef(serviceMeta metav1.ObjectMeta, epp exporterPortProvider,
 		TypeMeta:   generateMetaInformation("Service", "v1"),
 		ObjectMeta: serviceMeta,
 		Spec: corev1.ServiceSpec{
-			Type:      generateServiceType(serviceType),
-			ClusterIP: "",
-			Selector:  maps.Copy(serviceMeta.GetLabels()),
+			Type:            generateServiceType(serviceType),
+			ClusterIP:       "",
+			Selector:        maps.Copy(serviceMeta.GetLabels()),
+			SessionAffinity: corev1.ServiceAffinityNone,
 			Ports: []corev1.ServicePort{
 				{
 					Name:       PortName,
@@ -51,6 +65,31 @@ func generateServiceDef(serviceMeta metav1.ObjectMeta, epp exporterPortProvider,
 	if headless {
 		service.Spec.ClusterIP = "None"
 	}
+
+	// Apply additional options if provided
+	if opts != nil {
+		// Set LoadBalancer class
+		if opts.LoadBalancerClass != nil {
+			service.Spec.LoadBalancerClass = opts.LoadBalancerClass
+		}
+
+		// Set External Traffic Policy
+		if opts.ExternalTrafficPolicy != "" {
+			service.Spec.ExternalTrafficPolicy = corev1.ServiceExternalTrafficPolicyType(opts.ExternalTrafficPolicy)
+		}
+
+		// Set Internal Traffic Policy
+		if opts.InternalTrafficPolicy != "" {
+			policy := corev1.ServiceInternalTrafficPolicyType(opts.InternalTrafficPolicy)
+			service.Spec.InternalTrafficPolicy = &policy
+		}
+
+		// Set Session Affinity
+		if opts.SessionAffinity != "" && opts.SessionAffinity != "None" {
+			service.Spec.SessionAffinity = corev1.ServiceAffinityClientIP
+		}
+	}
+
 	if exporterPort, ok := epp(); ok {
 		redisExporterService := enableMetricsPort(exporterPort)
 		service.Spec.Ports = append(service.Spec.Ports, *redisExporterService)
@@ -127,6 +166,22 @@ func getService(ctx context.Context, k8sClient kubernetes.Interface, namespace s
 // CreateOrUpdateService method will create or update Redis service
 func CreateOrUpdateService(ctx context.Context, namespace string, serviceMeta metav1.ObjectMeta, ownerDef metav1.OwnerReference, epp exporterPortProvider, headless bool, serviceType string, port int, cl kubernetes.Interface, extra ...corev1.ServicePort) error {
 	serviceDef := generateServiceDef(serviceMeta, epp, ownerDef, headless, serviceType, port, extra...)
+	storedService, err := getService(ctx, cl, namespace, serviceMeta.GetName())
+	if err != nil {
+		if errors.IsNotFound(err) {
+			if err := patch.DefaultAnnotator.SetLastAppliedAnnotation(serviceDef); err != nil { //nolint:gocritic
+				log.FromContext(ctx).Error(err, "Unable to patch redis service with compare annotations")
+			}
+			return createService(ctx, cl, namespace, serviceDef)
+		}
+		return err
+	}
+	return patchService(ctx, storedService, serviceDef, namespace, cl)
+}
+
+// CreateOrUpdateServiceWithOptions method will create or update Redis service with additional options
+func CreateOrUpdateServiceWithOptions(ctx context.Context, namespace string, serviceMeta metav1.ObjectMeta, ownerDef metav1.OwnerReference, epp exporterPortProvider, headless bool, serviceType string, port int, opts *ServiceOptions, cl kubernetes.Interface, extra ...corev1.ServicePort) error {
+	serviceDef := generateServiceDefWithOptions(serviceMeta, epp, ownerDef, headless, serviceType, port, opts, extra...)
 	storedService, err := getService(ctx, cl, namespace, serviceMeta.GetName())
 	if err != nil {
 		if errors.IsNotFound(err) {

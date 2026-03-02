@@ -27,6 +27,7 @@ import (
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/controller/common/events"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/controller/common/redis"
 	intctrlutil "github.com/OT-CONTAINER-KIT/redis-operator/internal/controllerutil"
+	"github.com/OT-CONTAINER-KIT/redis-operator/internal/envs"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/k8sutils"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/monitoring"
 	retry "github.com/avast/retry-go"
@@ -364,6 +365,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 }
 
 func (r *Reconciler) updateStatus(ctx context.Context, rc *rcvb2.RedisCluster, status rcvb2.RedisClusterStatus) (requeue bool, err error) {
+	// Automatically populate ConnectionInfo
+	if status.ConnectionInfo == nil {
+		status.ConnectionInfo = k8sutils.GetRedisClusterConnectionInfo(ctx, r.K8sClient, rc, envs.GetServiceDNSDomain())
+	}
+
 	if reflect.DeepEqual(rc.Status, status) {
 		return false, nil
 	}

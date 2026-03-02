@@ -61,14 +61,6 @@ const (
 	RedisStateFailed RedisState = "Failed"
 )
 
-// ConnectionInfo provides connection details for clients to connect to Redis
-type ConnectionInfo struct {
-	// Host is the service FQDN
-	Host string `json:"host,omitempty"`
-	// Port is the service port
-	Port int `json:"port,omitempty"`
-}
-
 // RedisStatus defines the observed state of Redis
 type RedisStatus struct {
 	// State is the current state of the Redis instance
@@ -79,7 +71,7 @@ type RedisStatus struct {
 	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
 	// ConnectionInfo provides connection details for clients to connect to Redis
 	// +optional
-	ConnectionInfo *ConnectionInfo `json:"connectionInfo,omitempty"`
+	ConnectionInfo *common.ConnectionInfo `json:"connectionInfo,omitempty"`
 }
 
 // +kubebuilder:object:root=true

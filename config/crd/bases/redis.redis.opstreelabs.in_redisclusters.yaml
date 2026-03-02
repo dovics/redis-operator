@@ -960,11 +960,37 @@ spec:
                           enabled:
                             default: true
                             type: boolean
+                          externalTrafficPolicy:
+                            description: ExternalTrafficPolicy defines how traffic
+                              from external sources is routed
+                            enum:
+                            - Local
+                            - Cluster
+                            type: string
                           includeBusPort:
                             description: |-
                               IncludeBusPort when set to true, it will add bus port to the service, such as 16379.
                               This field is only used for Redis cluster mode.
                             type: boolean
+                          internalTrafficPolicy:
+                            description: InternalTrafficPolicy defines how traffic
+                              from internal sources is routed
+                            enum:
+                            - Local
+                            - Cluster
+                            type: string
+                          loadBalancerClass:
+                            description: LoadBalancerClass is the class of the load
+                              balancer to use
+                            type: string
+                          sessionAffinity:
+                            default: None
+                            description: SessionAffinity defines the session affinity
+                              settings
+                            enum:
+                            - ClientIP
+                            - None
+                            type: string
                           type:
                             default: ClusterIP
                             enum:
@@ -988,11 +1014,37 @@ spec:
                           enabled:
                             default: true
                             type: boolean
+                          externalTrafficPolicy:
+                            description: ExternalTrafficPolicy defines how traffic
+                              from external sources is routed
+                            enum:
+                            - Local
+                            - Cluster
+                            type: string
                           includeBusPort:
                             description: |-
                               IncludeBusPort when set to true, it will add bus port to the service, such as 16379.
                               This field is only used for Redis cluster mode.
                             type: boolean
+                          internalTrafficPolicy:
+                            description: InternalTrafficPolicy defines how traffic
+                              from internal sources is routed
+                            enum:
+                            - Local
+                            - Cluster
+                            type: string
+                          loadBalancerClass:
+                            description: LoadBalancerClass is the class of the load
+                              balancer to use
+                            type: string
+                          sessionAffinity:
+                            default: None
+                            description: SessionAffinity defines the session affinity
+                              settings
+                            enum:
+                            - ClientIP
+                            - None
+                            type: string
                           type:
                             default: ClusterIP
                             enum:
@@ -1007,6 +1059,7 @@ spec:
                           This field is only used for Redis cluster mode.
                         type: boolean
                       serviceType:
+                        default: ClusterIP
                         enum:
                         - LoadBalancer
                         - NodePort
@@ -8625,6 +8678,57 @@ spec:
           status:
             description: RedisClusterStatus defines the observed state of RedisCluster
             properties:
+              connectionInfo:
+                description: ConnectionInfo provides connection details for clients
+                  to connect to Redis
+                properties:
+                  clusterIP:
+                    description: ClusterIP is the service cluster IP
+                    type: string
+                  domain:
+                    description: Domain is the service domain
+                    type: string
+                  externalIPs:
+                    description: ExternalIPs are the service external IPs
+                    items:
+                      type: string
+                    type: array
+                  host:
+                    description: Host is the service FQDN
+                    type: string
+                  masterName:
+                    description: MasterName is the Sentinel master group name, only
+                      set when Sentinel mode is enabled
+                    type: string
+                  port:
+                    description: Port is the service port
+                    type: integer
+                  ports:
+                    description: Ports are the service ports
+                    items:
+                      description: ServicePort represents a network port exposed by
+                        a service
+                      properties:
+                        name:
+                          description: Name of the port
+                          type: string
+                        port:
+                          description: Port number
+                          format: int32
+                          type: integer
+                        protocol:
+                          description: Protocol (TCP/UDP)
+                          enum:
+                          - TCP
+                          - UDP
+                          type: string
+                      type: object
+                    type: array
+                  type:
+                    description: Type is the service type (ClusterIP, LoadBalancer,
+                      NodePort, etc.)
+                    type: string
+                type: object
               readyFollowerReplicas:
                 default: 0
                 format: int32

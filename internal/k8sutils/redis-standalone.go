@@ -52,7 +52,14 @@ func CreateStandaloneService(ctx context.Context, cr *rvb2.Redis, cl kubernetes.
 		return err
 	}
 	if cr.Spec.KubernetesConfig.ShouldCreateAdditionalService() {
-		err = CreateOrUpdateService(
+		// Build service options from configuration
+		opts := &ServiceOptions{
+			LoadBalancerClass:     cr.Spec.KubernetesConfig.GetAdditionalServiceLoadBalancerClass(),
+			ExternalTrafficPolicy: cr.Spec.KubernetesConfig.GetAdditionalServiceExternalTrafficPolicy(),
+			InternalTrafficPolicy: cr.Spec.KubernetesConfig.GetAdditionalServiceInternalTrafficPolicy(),
+			SessionAffinity:       cr.Spec.KubernetesConfig.GetAdditionalServiceSessionAffinity(),
+		}
+		err = CreateOrUpdateServiceWithOptions(
 			ctx,
 			cr.Namespace,
 			additionalObjectMetaInfo,
@@ -61,6 +68,7 @@ func CreateStandaloneService(ctx context.Context, cr *rvb2.Redis, cl kubernetes.
 			false,
 			cr.Spec.KubernetesConfig.GetServiceType(),
 			common.RedisPort,
+			opts,
 			cl,
 		)
 		if err != nil {

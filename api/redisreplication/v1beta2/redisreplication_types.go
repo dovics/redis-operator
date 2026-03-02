@@ -58,17 +58,6 @@ const (
 	RedisReplicationStateFailed RedisReplicationState = "Failed"
 )
 
-// ConnectionInfo provides connection details for clients to connect to Redis
-type ConnectionInfo struct {
-	// Host is the service FQDN
-	Host string `json:"host,omitempty"`
-	// Port is the service port
-	Port int `json:"port,omitempty"`
-	// MasterName is the Sentinel master group name, only set when Sentinel mode is enabled
-	// +optional
-	MasterName string `json:"masterName,omitempty"`
-}
-
 // RedisReplicationStatus defines the observed state of RedisReplication
 type RedisReplicationStatus struct {
 	// State is the current state of the Redis replication
@@ -82,7 +71,7 @@ type RedisReplicationStatus struct {
 	MasterNode string `json:"masterNode,omitempty"`
 	// ConnectionInfo provides connection details for clients to connect to Redis
 	// +optional
-	ConnectionInfo *ConnectionInfo `json:"connectionInfo,omitempty"`
+	ConnectionInfo *common.ConnectionInfo `json:"connectionInfo,omitempty"`
 }
 
 // +kubebuilder:object:root=true

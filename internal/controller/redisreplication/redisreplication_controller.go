@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	commonv1beta2 "github.com/OT-CONTAINER-KIT/redis-operator/api/common/v1beta2"
 	rrvb2 "github.com/OT-CONTAINER-KIT/redis-operator/api/redisreplication/v1beta2"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/controller/common"
 	redishealer "github.com/OT-CONTAINER-KIT/redis-operator/internal/controller/common/redis"
@@ -105,7 +106,7 @@ func (r *Reconciler) UpdateRedisReplicationMaster(ctx context.Context, instance 
 
 // updateRedisReplicationStatus updates the RedisReplication status with all fields
 func (r *Reconciler) updateRedisReplicationStatus(ctx context.Context, instance *rrvb2.RedisReplication, masterNode string, state rrvb2.RedisReplicationState, readyReplicas int32) error {
-	connectionInfo := instance.GetConnectionInfo(envs.GetServiceDNSDomain())
+	connectionInfo := k8sutils.GetRedisReplicationConnectionInfo(ctx, r.K8sClient, instance, envs.GetServiceDNSDomain())
 
 	// Only update if status has changed
 	if instance.Status.MasterNode == masterNode &&
@@ -123,14 +124,15 @@ func (r *Reconciler) updateRedisReplicationStatus(ctx context.Context, instance 
 	})
 }
 
-func connectionInfoEqual(a, b *rrvb2.ConnectionInfo) bool {
+func connectionInfoEqual(a, b *commonv1beta2.ConnectionInfo) bool {
 	if a == nil && b == nil {
 		return true
 	}
 	if a == nil || b == nil {
 		return false
 	}
-	return a.Host == b.Host && a.Port == b.Port && a.MasterName == b.MasterName
+	return a.Host == b.Host && a.Port == b.Port && a.MasterName == b.MasterName &&
+		a.Type == b.Type && a.ClusterIP == b.ClusterIP
 }
 
 type reconciler struct {

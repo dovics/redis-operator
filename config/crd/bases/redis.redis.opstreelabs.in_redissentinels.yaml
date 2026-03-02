@@ -1761,11 +1761,37 @@ spec:
                           enabled:
                             default: true
                             type: boolean
+                          externalTrafficPolicy:
+                            description: ExternalTrafficPolicy defines how traffic
+                              from external sources is routed
+                            enum:
+                            - Local
+                            - Cluster
+                            type: string
                           includeBusPort:
                             description: |-
                               IncludeBusPort when set to true, it will add bus port to the service, such as 16379.
                               This field is only used for Redis cluster mode.
                             type: boolean
+                          internalTrafficPolicy:
+                            description: InternalTrafficPolicy defines how traffic
+                              from internal sources is routed
+                            enum:
+                            - Local
+                            - Cluster
+                            type: string
+                          loadBalancerClass:
+                            description: LoadBalancerClass is the class of the load
+                              balancer to use
+                            type: string
+                          sessionAffinity:
+                            default: None
+                            description: SessionAffinity defines the session affinity
+                              settings
+                            enum:
+                            - ClientIP
+                            - None
+                            type: string
                           type:
                             default: ClusterIP
                             enum:
@@ -1789,11 +1815,37 @@ spec:
                           enabled:
                             default: true
                             type: boolean
+                          externalTrafficPolicy:
+                            description: ExternalTrafficPolicy defines how traffic
+                              from external sources is routed
+                            enum:
+                            - Local
+                            - Cluster
+                            type: string
                           includeBusPort:
                             description: |-
                               IncludeBusPort when set to true, it will add bus port to the service, such as 16379.
                               This field is only used for Redis cluster mode.
                             type: boolean
+                          internalTrafficPolicy:
+                            description: InternalTrafficPolicy defines how traffic
+                              from internal sources is routed
+                            enum:
+                            - Local
+                            - Cluster
+                            type: string
+                          loadBalancerClass:
+                            description: LoadBalancerClass is the class of the load
+                              balancer to use
+                            type: string
+                          sessionAffinity:
+                            default: None
+                            description: SessionAffinity defines the session affinity
+                              settings
+                            enum:
+                            - ClientIP
+                            - None
+                            type: string
                           type:
                             default: ClusterIP
                             enum:
@@ -1808,6 +1860,7 @@ spec:
                           This field is only used for Redis cluster mode.
                         type: boolean
                       serviceType:
+                        default: ClusterIP
                         enum:
                         - LoadBalancer
                         - NodePort

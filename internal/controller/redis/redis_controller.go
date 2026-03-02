@@ -79,7 +79,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 // reconcileStatus updates the Redis status with connection information and health state
 func (r *Reconciler) reconcileStatus(ctx context.Context, instance *rvb2.Redis) error {
-	connectionInfo := instance.GetConnectionInfo(envs.GetServiceDNSDomain())
+	connectionInfo := k8sutils.GetRedisConnectionInfo(ctx, r.K8sClient, instance, envs.GetServiceDNSDomain())
 
 	// Check StatefulSet health
 	stsService := k8sutils.NewStatefulSetService(r.K8sClient)
@@ -98,7 +98,9 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, instance *rvb2.Redis) 
 		instance.Status.ReadyReplicas == readyReplicas &&
 		instance.Status.ConnectionInfo != nil &&
 		instance.Status.ConnectionInfo.Host == connectionInfo.Host &&
-		instance.Status.ConnectionInfo.Port == connectionInfo.Port {
+		instance.Status.ConnectionInfo.Port == connectionInfo.Port &&
+		instance.Status.ConnectionInfo.Type == connectionInfo.Type &&
+		instance.Status.ConnectionInfo.ClusterIP == connectionInfo.ClusterIP {
 		return nil
 	}
 
