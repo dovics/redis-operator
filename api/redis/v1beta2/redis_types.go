@@ -49,12 +49,45 @@ type RedisSpec struct {
 	HostPort                      *int                       `json:"hostPort,omitempty"`
 }
 
+// RedisState represents the state of a Redis instance
+type RedisState string
+
+const (
+	// RedisStateReady means the Redis instance is ready to serve requests
+	RedisStateReady RedisState = "Ready"
+	// RedisStateCreating means the Redis instance is being created
+	RedisStateCreating RedisState = "Creating"
+	// RedisStateFailed means the Redis instance has failed
+	RedisStateFailed RedisState = "Failed"
+)
+
+// ConnectionInfo provides connection details for clients to connect to Redis
+type ConnectionInfo struct {
+	// Host is the service FQDN
+	Host string `json:"host,omitempty"`
+	// Port is the service port
+	Port int `json:"port,omitempty"`
+}
+
 // RedisStatus defines the observed state of Redis
-type RedisStatus struct{}
+type RedisStatus struct {
+	// State is the current state of the Redis instance
+	// +optional
+	State RedisState `json:"state,omitempty"`
+	// ReadyReplicas is the number of ready Redis replicas
+	// +optional
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+	// ConnectionInfo provides connection details for clients to connect to Redis
+	// +optional
+	ConnectionInfo *ConnectionInfo `json:"connectionInfo,omitempty"`
+}
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.state",description="The current state of the Redis instance",priority=1
+// +kubebuilder:printcolumn:name="ReadyReplicas",type=integer,JSONPath=".status.readyReplicas",description="Number of ready replicas"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=".metadata.creationTimestamp",description="Age of the Redis instance",priority=1
 
 // Redis is the Schema for the redis API
 type Redis struct {

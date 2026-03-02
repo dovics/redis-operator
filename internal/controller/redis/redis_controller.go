@@ -23,6 +23,7 @@ import (
 	rvb2 "github.com/OT-CONTAINER-KIT/redis-operator/api/redis/v1beta2"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/controller/common"
 	intctrlutil "github.com/OT-CONTAINER-KIT/redis-operator/internal/controllerutil"
+	"github.com/OT-CONTAINER-KIT/redis-operator/internal/envs"
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/k8sutils"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -67,7 +68,53 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil {
 		return intctrlutil.RequeueE(ctx, err, "failed to create service")
 	}
+
+	// Update status
+	if err = r.reconcileStatus(ctx, instance); err != nil {
+		return intctrlutil.RequeueE(ctx, err, "failed to update status")
+	}
+
 	return intctrlutil.RequeueAfter(ctx, time.Second*10, "requeue after 10 seconds")
+}
+
+// reconcileStatus updates the Redis status with connection information and health state
+func (r *Reconciler) reconcileStatus(ctx context.Context, instance *rvb2.Redis) error {
+	connectionInfo := instance.GetConnectionInfo(envs.GetServiceDNSDomain())
+
+	// Check StatefulSet health
+	stsService := k8sutils.NewStatefulSetService(r.K8sClient)
+	isReady := stsService.IsStatefulSetReady(ctx, instance.Namespace, instance.Name)
+	readyReplicas := stsService.GetStatefulSetReplicas(ctx, instance.Namespace, instance.Name)
+
+	var state rvb2.RedisState
+	if isReady && readyReplicas > 0 {
+		state = rvb2.RedisStateReady
+	} else {
+		state = rvb2.RedisStateCreating
+	}
+
+	// Only update if status has changed
+	if instance.Status.State == state &&
+		instance.Status.ReadyReplicas == readyReplicas &&
+		instance.Status.ConnectionInfo != nil &&
+		instance.Status.ConnectionInfo.Host == connectionInfo.Host &&
+		instance.Status.ConnectionInfo.Port == connectionInfo.Port {
+		return nil
+	}
+
+	return r.updateStatus(ctx, instance, rvb2.RedisStatus{
+		State:          state,
+		ReadyReplicas:  readyReplicas,
+		ConnectionInfo: connectionInfo,
+	})
+}
+
+// updateStatus updates the status subresource
+func (r *Reconciler) updateStatus(ctx context.Context, redis *rvb2.Redis, status rvb2.RedisStatus) error {
+	copy := redis.DeepCopy()
+	copy.Spec = rvb2.RedisSpec{}
+	copy.Status = status
+	return common.UpdateStatus(ctx, r.Client, copy)
 }
 
 // SetupWithManager sets up the controller with the Manager.

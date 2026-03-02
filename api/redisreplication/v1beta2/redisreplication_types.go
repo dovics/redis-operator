@@ -44,6 +44,20 @@ func (cr *RedisReplicationSpec) GetReplicationCounts(t string) int32 {
 	return *replica
 }
 
+// RedisReplicationState represents the state of a RedisReplication instance
+type RedisReplicationState string
+
+const (
+	// RedisReplicationStateReady means the Redis replication is ready to serve requests
+	RedisReplicationStateReady RedisReplicationState = "Ready"
+	// RedisReplicationStateCreating means the Redis replication is being created
+	RedisReplicationStateCreating RedisReplicationState = "Creating"
+	// RedisReplicationStateConfiguring means the Redis replication is being configured
+	RedisReplicationStateConfiguring RedisReplicationState = "Configuring"
+	// RedisReplicationStateFailed means the Redis replication has failed
+	RedisReplicationStateFailed RedisReplicationState = "Failed"
+)
+
 // ConnectionInfo provides connection details for clients to connect to Redis
 type ConnectionInfo struct {
 	// Host is the service FQDN
@@ -55,8 +69,16 @@ type ConnectionInfo struct {
 	MasterName string `json:"masterName,omitempty"`
 }
 
-// RedisStatus defines the observed state of Redis
+// RedisReplicationStatus defines the observed state of RedisReplication
 type RedisReplicationStatus struct {
+	// State is the current state of the Redis replication
+	// +optional
+	State RedisReplicationState `json:"state,omitempty"`
+	// ReadyReplicas is the number of ready Redis replicas
+	// +optional
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+	// MasterNode is the name of the current master node
+	// +optional
 	MasterNode string `json:"masterNode,omitempty"`
 	// ConnectionInfo provides connection details for clients to connect to Redis
 	// +optional
@@ -66,8 +88,10 @@ type RedisReplicationStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
-// +kubebuilder:printcolumn:name="Master",type="string",JSONPath=".status.masterNode"
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.state",description="The current state of the Redis replication",priority=1
+// +kubebuilder:printcolumn:name="ReadyReplicas",type=integer,JSONPath=".status.readyReplicas",description="Number of ready replicas"
+// +kubebuilder:printcolumn:name="Master",type="string",JSONPath=".status.masterNode",description="Current master node"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age of the Redis replication",priority=1
 
 // Redis is the Schema for the redis API
 type RedisReplication struct {

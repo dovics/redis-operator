@@ -103,6 +103,26 @@ func (r *Reconciler) UpdateRedisReplicationMaster(ctx context.Context, instance 
 	})
 }
 
+// updateRedisReplicationStatus updates the RedisReplication status with all fields
+func (r *Reconciler) updateRedisReplicationStatus(ctx context.Context, instance *rrvb2.RedisReplication, masterNode string, state rrvb2.RedisReplicationState, readyReplicas int32) error {
+	connectionInfo := instance.GetConnectionInfo(envs.GetServiceDNSDomain())
+
+	// Only update if status has changed
+	if instance.Status.MasterNode == masterNode &&
+		instance.Status.State == state &&
+		instance.Status.ReadyReplicas == readyReplicas &&
+		connectionInfoEqual(instance.Status.ConnectionInfo, connectionInfo) {
+		return nil
+	}
+
+	return r.updateStatus(ctx, instance, rrvb2.RedisReplicationStatus{
+		State:          state,
+		ReadyReplicas:  readyReplicas,
+		MasterNode:     masterNode,
+		ConnectionInfo: connectionInfo,
+	})
+}
+
 func connectionInfoEqual(a, b *rrvb2.ConnectionInfo) bool {
 	if a == nil && b == nil {
 		return true
@@ -418,18 +438,49 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, instance *rrvb2.RedisR
 		return intctrlutil.RequeueE(ctx, err, "")
 	}
 	realMaster = k8sutils.GetRedisReplicationRealMaster(ctx, r.K8sClient, instance, masterNodes)
-	if err = r.UpdateRedisReplicationMaster(ctx, instance, realMaster); err != nil {
-		return intctrlutil.RequeueE(ctx, err, "")
-	}
-	labels := common.GetRedisLabels(instance.GetName(), common.SetupTypeReplication, "replication", instance.GetLabels())
-	if err = r.Healer.UpdateRedisRoleLabel(ctx, instance.GetNamespace(), labels, instance.Spec.KubernetesConfig.ExistingPasswordSecret, instance.Spec.TLS); err != nil {
-		return intctrlutil.RequeueE(ctx, err, "")
-	}
 
 	slaveNodes, err := k8sutils.GetRedisNodesByRole(ctx, r.K8sClient, instance, "slave")
 	if err != nil {
 		return intctrlutil.RequeueE(ctx, err, "")
 	}
+
+	// Check StatefulSet health and calculate state
+	stsService := k8sutils.NewStatefulSetService(r.K8sClient)
+	isReady := stsService.IsStatefulSetReady(ctx, instance.Namespace, instance.RedisStatefulSet())
+	readyReplicas := stsService.GetStatefulSetReplicas(ctx, instance.Namespace, instance.RedisStatefulSet())
+
+	var state rrvb2.RedisReplicationState
+	desiredReplicas := *instance.Spec.Size
+
+	if instance.EnableSentinel() {
+		sentinelReady := stsService.IsStatefulSetReady(ctx, instance.Namespace, instance.SentinelStatefulSet())
+		if !sentinelReady || !isReady {
+			state = rrvb2.RedisReplicationStateCreating
+		} else if readyReplicas != desiredReplicas {
+			state = rrvb2.RedisReplicationStateConfiguring
+		} else {
+			state = rrvb2.RedisReplicationStateReady
+		}
+	} else {
+		if !isReady {
+			state = rrvb2.RedisReplicationStateCreating
+		} else if readyReplicas != desiredReplicas {
+			state = rrvb2.RedisReplicationStateConfiguring
+		} else {
+			state = rrvb2.RedisReplicationStateReady
+		}
+	}
+
+	// Update status with state information
+	if err = r.updateRedisReplicationStatus(ctx, instance, realMaster, state, readyReplicas); err != nil {
+		return intctrlutil.RequeueE(ctx, err, "")
+	}
+
+	labels := common.GetRedisLabels(instance.GetName(), common.SetupTypeReplication, "replication", instance.GetLabels())
+	if err = r.Healer.UpdateRedisRoleLabel(ctx, instance.GetNamespace(), labels, instance.Spec.KubernetesConfig.ExistingPasswordSecret, instance.Spec.TLS); err != nil {
+		return intctrlutil.RequeueE(ctx, err, "")
+	}
+
 	if realMaster != "" {
 		monitoring.RedisReplicationConnectedSlavesTotal.WithLabelValues(instance.Namespace, instance.Name).Set(float64(len(slaveNodes)))
 	} else {
