@@ -48,7 +48,7 @@ func TestRedisSentinelWebhook(t *testing.T) {
 	}
 
 	sentinel := &v1beta2.RedisSentinel{}
-	webhook.RunValidationWebhookTests(t, gvk, sentinel, cases...)
+	webhook.RunValidationWebhookTests(t, gvk, sentinel, sentinel, cases...)
 }
 
 func mkRedisSentinel(uid string) *v1beta2.RedisSentinel {

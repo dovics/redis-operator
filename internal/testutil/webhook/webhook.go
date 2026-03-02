@@ -31,12 +31,13 @@ type ValidationWebhookTestCase struct {
 	Check     func(t *testing.T, response *admissionv1beta1.AdmissionResponse)
 }
 
-func RunValidationWebhookTests(t *testing.T, gvk metav1.GroupVersionKind, validator admission.Validator, tests ...ValidationWebhookTestCase) {
+func RunValidationWebhookTests(t *testing.T, gvk metav1.GroupVersionKind, obj runtime.Object, validator admission.CustomValidator, tests ...ValidationWebhookTestCase) {
 	t.Helper()
 	controllerscheme.SetupV1beta2Scheme()
 	decoder := serializer.NewCodecFactory(clientgoscheme.Scheme).UniversalDeserializer()
 
-	webhookHandler := admission.ValidatingWebhookFor(clientgoscheme.Scheme, validator)
+	// Create a webhook handler using the new CustomValidator interface
+	webhookHandler := admission.WithCustomValidator(clientgoscheme.Scheme, obj, validator)
 
 	server := httptest.NewServer(webhookHandler)
 	defer server.Close()

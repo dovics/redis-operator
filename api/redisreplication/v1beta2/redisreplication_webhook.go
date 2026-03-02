@@ -17,13 +17,15 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
+	"fmt"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -42,25 +44,41 @@ func (r *RedisReplication) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-var _ webhook.Validator = &RedisReplication{}
+var _ admission.CustomValidator = &RedisReplication{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *RedisReplication) ValidateCreate() (admission.Warnings, error) {
-	redisreplicationlog.Info("validate create", "name", r.Name)
+// ValidateCreate implements admission.CustomValidator so a webhook will be registered for the type
+func (r *RedisReplication) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	replication, ok := obj.(*RedisReplication)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a RedisReplication object but got %T", obj))
+	}
+	redisreplicationlog.Info("validate create", "name", replication.Name)
 
 	return r.validate(nil)
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *RedisReplication) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	redisreplicationlog.Info("validate update", "name", r.Name)
+// ValidateUpdate implements admission.CustomValidator so a webhook will be registered for the type
+func (r *RedisReplication) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	oldReplication, ok := oldObj.(*RedisReplication)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a RedisReplication object but got %T", oldObj))
+	}
+	newReplication, ok := newObj.(*RedisReplication)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a RedisReplication object but got %T", newObj))
+	}
+	redisreplicationlog.Info("validate update", "name", newReplication.Name)
 
-	return r.validate(old.(*RedisReplication))
+	return r.validate(oldReplication)
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *RedisReplication) ValidateDelete() (admission.Warnings, error) {
-	redisreplicationlog.Info("validate delete", "name", r.Name)
+// ValidateDelete implements admission.CustomValidator so a webhook will be registered for the type
+func (r *RedisReplication) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	replication, ok := obj.(*RedisReplication)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a RedisReplication object but got %T", obj))
+	}
+	redisreplicationlog.Info("validate delete", "name", replication.Name)
 
 	return nil, nil
 }

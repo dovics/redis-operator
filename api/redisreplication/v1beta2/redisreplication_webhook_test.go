@@ -38,7 +38,7 @@ func TestRedisReplicationWebhook(t *testing.T) {
 	}
 
 	replication := &v1beta2.RedisReplication{}
-	webhook.RunValidationWebhookTests(t, gvk, replication, cases...)
+	webhook.RunValidationWebhookTests(t, gvk, replication, replication, cases...)
 }
 
 func mkRedisReplication(uid string) *v1beta2.RedisReplication {

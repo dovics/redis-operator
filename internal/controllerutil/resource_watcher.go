@@ -3,22 +3,22 @@ package controllerutil
 import (
 	"context"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// ResourceWatcher implements handler.EventHandler and is used to trigger reconciliation when
+// ResourceWatcher implements handler.TypedEventHandler and is used to trigger reconciliation when
 // a watched object changes. It's designed to only be used for a single type of object.
 // If multiple types should be watched, one ResourceWatcher for each type should be used.
 type ResourceWatcher struct {
 	watched map[types.NamespacedName][]types.NamespacedName
 }
 
-var _ handler.EventHandler = &ResourceWatcher{}
+var _ handler.TypedEventHandler[client.Object, reconcile.Request] = &ResourceWatcher{}
 
 // NewResourceWatcher will create a new ResourceWatcher with no watched objects.
 func NewResourceWatcher() *ResourceWatcher {
@@ -28,7 +28,7 @@ func NewResourceWatcher() *ResourceWatcher {
 }
 
 // Watch will add a new object to watch.
-func (w ResourceWatcher) Watch(ctx context.Context, watchedName, dependentName types.NamespacedName) {
+func (w *ResourceWatcher) Watch(ctx context.Context, watchedName, dependentName types.NamespacedName) {
 	existing, hasExisting := w.watched[watchedName]
 	if !hasExisting {
 		existing = []types.NamespacedName{}
@@ -42,29 +42,32 @@ func (w ResourceWatcher) Watch(ctx context.Context, watchedName, dependentName t
 	w.watched[watchedName] = append(existing, dependentName)
 }
 
-func (w ResourceWatcher) Create(ctx context.Context, event event.CreateEvent, queue workqueue.RateLimitingInterface) {
-	w.handleEvent(event.Object, queue)
+func (w *ResourceWatcher) Create(ctx context.Context, evt event.TypedCreateEvent[client.Object], queue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	w.handleEvent(evt.Object, queue)
 }
 
-func (w ResourceWatcher) Update(ctx context.Context, event event.UpdateEvent, queue workqueue.RateLimitingInterface) {
-	w.handleEvent(event.ObjectOld, queue)
+func (w *ResourceWatcher) Update(ctx context.Context, evt event.TypedUpdateEvent[client.Object], queue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	w.handleEvent(evt.ObjectOld, queue)
 }
 
-func (w ResourceWatcher) Delete(ctx context.Context, event event.DeleteEvent, queue workqueue.RateLimitingInterface) {
-	w.handleEvent(event.Object, queue)
+func (w *ResourceWatcher) Delete(ctx context.Context, evt event.TypedDeleteEvent[client.Object], queue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	w.handleEvent(evt.Object, queue)
 }
 
-func (w ResourceWatcher) Generic(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
-	w.handleEvent(event.Object, queue)
+func (w *ResourceWatcher) Generic(ctx context.Context, evt event.TypedGenericEvent[client.Object], queue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	w.handleEvent(evt.Object, queue)
 }
 
 // handleEvent is called when an event is received for an object.
 // It will check if the object is being watched and trigger a reconciliation for
 // the dependent object.
-func (w ResourceWatcher) handleEvent(meta metav1.Object, queue workqueue.RateLimitingInterface) {
+func (w *ResourceWatcher) handleEvent(obj client.Object, queue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	if obj == nil {
+		return
+	}
 	changedObjectName := types.NamespacedName{
-		Name:      meta.GetName(),
-		Namespace: meta.GetNamespace(),
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
 	}
 
 	// Enqueue reconciliation for each dependent object.

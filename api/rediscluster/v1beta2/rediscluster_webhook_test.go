@@ -61,7 +61,7 @@ func TestRedisClusterWebhook(t *testing.T) {
 	}
 
 	cluster := &v1beta2.RedisCluster{}
-	webhook.RunValidationWebhookTests(t, gvk, cluster, cases...)
+	webhook.RunValidationWebhookTests(t, gvk, cluster, cluster, cases...)
 }
 
 func mkRedisCluster(uid string) *v1beta2.RedisCluster {

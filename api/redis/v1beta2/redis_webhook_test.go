@@ -38,7 +38,7 @@ func TestRedisWebhook(t *testing.T) {
 	}
 
 	redis := &v1beta2.Redis{}
-	webhook.RunValidationWebhookTests(t, gvk, redis, cases...)
+	webhook.RunValidationWebhookTests(t, gvk, redis, redis, cases...)
 }
 
 func mkRedis(uid string) *v1beta2.Redis {
