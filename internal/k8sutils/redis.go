@@ -18,7 +18,6 @@ import (
 	"github.com/OT-CONTAINER-KIT/redis-operator/internal/envs"
 	retry "github.com/avast/retry-go"
 	redis "github.com/redis/go-redis/v9"
-	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -99,29 +98,7 @@ func getEndpoint(ctx context.Context, client kubernetes.Interface, cr *rcvb2.Red
 			host = "[" + host + "]"
 		}
 	}
-	if cr.Spec.KubernetesConfig.GetServiceType() == "NodePort" {
-		svc, err := getService(ctx, client, cr.Namespace, rd.PodName)
-		if err != nil {
-			log.FromContext(ctx).Error(err, "Failed to get service for redis pod", "Pod", rd.PodName)
-			return ""
-		}
-		if svc.Spec.Type != corev1.ServiceTypeNodePort {
-			log.FromContext(ctx).Error(errors.New("service type mismatch"), "Expected NodePort service type", "Pod", rd.PodName, "ActualType", svc.Spec.Type)
-			return ""
-		}
-		svcPort, ok := lo.Find(svc.Spec.Ports, func(item corev1.ServicePort) bool {
-			return item.Name == "redis-client"
-		})
-		if ok {
-			port = int(svcPort.NodePort)
-		}
-		pod, err := client.CoreV1().Pods(rd.Namespace).Get(ctx, rd.PodName, metav1.GetOptions{})
-		if err != nil {
-			log.FromContext(ctx).Error(err, "")
-			return ""
-		}
-		host = pod.Status.HostIP
-	}
+
 	return host + ":" + strconv.Itoa(port)
 }
 

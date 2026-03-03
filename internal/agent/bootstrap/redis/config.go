@@ -38,7 +38,6 @@ func GenerateConfig() error {
 		externalConfigFile = util.CoalesceEnv1("EXTERNAL_CONFIG_FILE", "/etc/redis/external.conf.d/redis-additional.conf")
 		redisMajorVersion  = util.CoalesceEnv1("REDIS_MAJOR_VERSION", "v7")
 		redisPort          = util.CoalesceEnv1("REDIS_PORT", "6379")
-		nodeport           = util.CoalesceEnv1("NODEPORT", "false")
 		tlsMode            = util.CoalesceEnv1("TLS_MODE", "false")
 		clusterMode        = util.CoalesceEnv1("SETUP_MODE", "standalone")
 		aclMode            = util.CoalesceEnv1("ACL_MODE", "")
@@ -74,13 +73,10 @@ func GenerateConfig() error {
 
 		var err error
 		var clusterAnnounceIP string
-		if nodeport == "true" {
-			clusterAnnounceIP = os.Getenv("HOST_IP")
-		} else {
-			clusterAnnounceIP, err = util.GetLocalIP()
-			if err != nil {
-				log.Printf("Warning: Failed to get local IP: %v", err)
-			}
+
+		clusterAnnounceIP, err = util.GetLocalIP()
+		if err != nil {
+			log.Printf("Warning: Failed to get local IP: %v", err)
 		}
 		if clusterAnnounceIP != "" {
 			cfg.Append("cluster-announce-ip", clusterAnnounceIP)
@@ -106,7 +102,7 @@ func GenerateConfig() error {
 
 		if clusterMode == "cluster" {
 			cfg.Append("tls-cluster", "yes")
-			if redisMajorVersion == "v7" && nodeport == "false" {
+			if redisMajorVersion == "v7" {
 				cfg.Append("cluster-preferred-endpoint-type", "hostname")
 			}
 		}
@@ -139,25 +135,6 @@ func GenerateConfig() error {
 		cfg.Append("port", redisPort)
 	}
 
-	if nodeport == "true" {
-		podHostname, _ := os.Hostname()
-		announcePortVar := "announce_port_" + strings.ReplaceAll(podHostname, "-", "_")
-		announceBusPortVar := "announce_bus_port_" + strings.ReplaceAll(podHostname, "-", "_")
-
-		// Get environment variables
-		clusterAnnouncePort := os.Getenv(announcePortVar)
-		clusterAnnounceBusPort := os.Getenv(announceBusPortVar)
-
-		if clusterAnnouncePort != "" {
-			cfg.Append("cluster-announce-port", clusterAnnouncePort)
-			if tlsMode == "true" {
-				cfg.Append("cluster-announce-tls-port", clusterAnnouncePort)
-			}
-		}
-		if clusterAnnounceBusPort != "" {
-			cfg.Append("cluster-announce-bus-port", clusterAnnounceBusPort)
-		}
-	}
 	if maxMemory := util.CoalesceEnv1(consts.ENV_KEY_REDIS_MAX_MEMORY, ""); maxMemory != "" {
 		cfg.Append("maxmemory", maxMemory)
 	}
