@@ -40,8 +40,7 @@ var redisclusterlog = logf.Log.WithName("rediscluster-v1beta2-validation")
 
 // SetupWebhookWithManager will setup the manager
 func (r *RedisCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, &RedisCluster{}).
 		Complete()
 }
 
@@ -55,7 +54,7 @@ func (r *RedisCluster) ValidateCreate(ctx context.Context, obj runtime.Object) (
 	}
 	redisclusterlog.Info("validate create", "name", cluster.Name)
 
-	return r.validate(nil)
+	return cluster.validate(nil)
 }
 
 // ValidateUpdate implements admission.CustomValidator so a webhook will be registered for the type
@@ -70,7 +69,7 @@ func (r *RedisCluster) ValidateUpdate(ctx context.Context, oldObj, newObj runtim
 	}
 	redisclusterlog.Info("validate update", "name", newCluster.Name)
 
-	return r.validate(oldCluster)
+	return newCluster.validate(oldCluster)
 }
 
 // ValidateDelete implements admission.CustomValidator so a webhook will be registered for the type

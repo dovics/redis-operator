@@ -39,8 +39,7 @@ var redislog = logf.Log.WithName("redis-v1beta2-validation")
 // +kubebuilder:webhook:path=/validate-redis-redis-opstreelabs-in-v1beta2-redis,mutating=false,failurePolicy=fail,sideEffects=None,groups=redis.redis.opstreelabs.in,resources=redis,verbs=create;update,versions=v1beta2,name=validate-redis.redis.opstreelabs.in,admissionReviewVersions=v1
 
 func (r *Redis) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, &Redis{}).
 		Complete()
 }
 
@@ -54,7 +53,7 @@ func (r *Redis) ValidateCreate(ctx context.Context, obj runtime.Object) (admissi
 	}
 	redislog.Info("validate create", "name", redis.Name)
 
-	return r.validate(nil)
+	return redis.validate(nil)
 }
 
 // ValidateUpdate implements admission.CustomValidator so a webhook will be registered for the type
@@ -69,7 +68,7 @@ func (r *Redis) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Objec
 	}
 	redislog.Info("validate update", "name", newRedis.Name)
 
-	return r.validate(oldRedis)
+	return newRedis.validate(oldRedis)
 }
 
 // ValidateDelete implements admission.CustomValidator so a webhook will be registered for the type

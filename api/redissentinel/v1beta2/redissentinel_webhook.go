@@ -40,8 +40,7 @@ var redissentinellog = logf.Log.WithName("redissentinel-v1beta2-validation")
 
 // SetupWebhookWithManager will setup the manager
 func (r *RedisSentinel) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+	return ctrl.NewWebhookManagedBy(mgr, &RedisSentinel{}).
 		Complete()
 }
 
@@ -55,7 +54,7 @@ func (r *RedisSentinel) ValidateCreate(ctx context.Context, obj runtime.Object) 
 	}
 	redissentinellog.Info("validate create", "name", sentinel.Name)
 
-	return r.validate(nil)
+	return sentinel.validate(nil)
 }
 
 // ValidateUpdate implements admission.CustomValidator so a webhook will be registered for the type
@@ -70,7 +69,7 @@ func (r *RedisSentinel) ValidateUpdate(ctx context.Context, oldObj, newObj runti
 	}
 	redissentinellog.Info("validate update", "name", newSentinel.Name)
 
-	return r.validate(oldSentinel)
+	return newSentinel.validate(oldSentinel)
 }
 
 // ValidateDelete implements admission.CustomValidator so a webhook will be registered for the type
