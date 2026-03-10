@@ -478,6 +478,11 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, instance *rrvb2.RedisR
 		return intctrlutil.RequeueE(ctx, err, "")
 	}
 
+	// Clean up recreate-statefulset annotation after StatefulSet is ready
+	if err := k8sutils.CleanupRecreateStatefulsetAnnotation(ctx, r.Client, instance, isReady && state == rrvb2.RedisReplicationStateReady); err != nil {
+		return intctrlutil.RequeueE(ctx, err, "")
+	}
+
 	labels := common.GetRedisLabels(instance.GetName(), common.SetupTypeReplication, "replication", instance.GetLabels())
 	if err = r.Healer.UpdateRedisRoleLabel(ctx, instance.GetNamespace(), labels, instance.Spec.KubernetesConfig.ExistingPasswordSecret, instance.Spec.TLS); err != nil {
 		return intctrlutil.RequeueE(ctx, err, "")

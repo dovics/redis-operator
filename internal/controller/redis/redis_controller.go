@@ -105,11 +105,20 @@ func (r *Reconciler) reconcileStatus(ctx context.Context, instance *rvb2.Redis) 
 		return nil
 	}
 
-	return r.updateStatus(ctx, instance, rvb2.RedisStatus{
+	if err := r.updateStatus(ctx, instance, rvb2.RedisStatus{
 		State:          state,
 		ReadyReplicas:  readyReplicas,
 		ConnectionInfo: connectionInfo,
-	})
+	}); err != nil {
+		return err
+	}
+
+	// Clean up recreate-statefulset annotation after StatefulSet is ready
+	if err := k8sutils.CleanupRecreateStatefulsetAnnotation(ctx, r.Client, instance, isReady); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // updateStatus updates the status subresource

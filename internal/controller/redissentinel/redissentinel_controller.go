@@ -147,6 +147,15 @@ func (r *RedisSentinelReconciler) reconcileSentinel(ctx context.Context, instanc
 	if err := r.Healer.SentinelReset(ctx, instance); err != nil {
 		return intctrlutil.RequeueE(ctx, err, "")
 	}
+
+	// Clean up recreate-statefulset annotation after StatefulSet is ready
+	stsService := k8sutils.NewStatefulSetService(r.K8sClient)
+	statefulSetName := instance.Name + "-" + "sentinel"
+	isReady := stsService.IsStatefulSetReady(ctx, instance.Namespace, statefulSetName)
+	if err := k8sutils.CleanupRecreateStatefulsetAnnotation(ctx, r.Client, instance, isReady); err != nil {
+		return intctrlutil.RequeueE(ctx, err, "")
+	}
+
 	return intctrlutil.Reconciled()
 }
 

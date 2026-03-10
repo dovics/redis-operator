@@ -351,6 +351,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if requeue {
 				return intctrlutil.Requeue()
 			}
+
+			// Clean up recreate-statefulset annotation after cluster is ready
+			if err := k8sutils.CleanupRecreateStatefulsetAnnotation(ctx, r.Client, instance, true); err != nil {
+				return intctrlutil.RequeueE(ctx, err, "failed to cleanup recreate-statefulset annotation")
+			}
 		}
 	}
 
